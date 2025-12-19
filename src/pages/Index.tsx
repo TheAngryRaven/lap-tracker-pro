@@ -8,6 +8,8 @@ import { LapTable } from "@/components/LapTable";
 import { ResizableSplit } from "@/components/ResizableSplit";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ParsedData, Track, Lap, FieldMapping, GpsSample } from "@/types/racing";
 import { calculateLaps } from "@/lib/lapCalculation";
 import { parseDatalog } from "@/lib/nmeaParser";
@@ -23,6 +25,7 @@ export default function Index() {
   const [laps, setLaps] = useState<Lap[]>([]);
   const [selectedLapNumber, setSelectedLapNumber] = useState<number | null>(null);
   const [isLoadingSample, setIsLoadingSample] = useState(false);
+  const [useKph, setUseKph] = useState(false);
 
   const handleLoadSample = useCallback(async () => {
     setIsLoadingSample(true);
@@ -136,6 +139,9 @@ export default function Index() {
     }
   }, []);
 
+  const speedUnit = useKph ? "kph" : "mph";
+  const getCurrentSpeed = (sample: GpsSample) => useKph ? sample.speedKph : sample.speedMph;
+
   // No data loaded - show import UI
   if (!data) {
     return (
@@ -235,6 +241,17 @@ export default function Index() {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Speed unit toggle */}
+          <div className="flex items-center gap-2">
+            <Label htmlFor="speed-unit" className="text-xs text-muted-foreground">MPH</Label>
+            <Switch
+              id="speed-unit"
+              checked={useKph}
+              onCheckedChange={setUseKph}
+            />
+            <Label htmlFor="speed-unit" className="text-xs text-muted-foreground">KPH</Label>
+          </div>
+
           {/* Track selector (compact) */}
           <div className="flex items-center gap-2">
             <TrackEditor selectedTrack={selectedTrack} onTrackSelect={handleTrackSelect} />
@@ -261,12 +278,12 @@ export default function Index() {
           {filteredSamples[currentIndex] && (
             <div className="flex items-center gap-4 text-sm font-mono bg-muted/50 px-3 py-1.5 rounded">
               <span className="text-racing-telemetrySpeed">
-                {filteredSamples[currentIndex].speedMph.toFixed(1)} mph
+                {getCurrentSpeed(filteredSamples[currentIndex]).toFixed(1)} {speedUnit}
               </span>
               {fieldMappings
                 .filter((f) => f.enabled)
                 .slice(0, 2)
-                .map((field, idx) => (
+                .map((field) => (
                   <span key={field.name} className="text-muted-foreground">
                     {field.name}: {(filteredSamples[currentIndex].extraFields[field.name] ?? 0).toFixed(1)}
                   </span>
@@ -327,9 +344,10 @@ export default function Index() {
                     currentIndex={currentIndex}
                     track={selectedTrack}
                     bounds={filteredBounds}
+                    useKph={useKph}
                   />
                 ) : (
-                  <LapTable laps={laps} onLapSelect={handleLapSelect} selectedLapNumber={selectedLapNumber} />
+                  <LapTable laps={laps} onLapSelect={handleLapSelect} selectedLapNumber={selectedLapNumber} useKph={useKph} />
                 )}
               </div>
             </div>

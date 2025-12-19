@@ -126,14 +126,20 @@ export function calculateLaps(samples: GpsSample[], track: Track): Lap[] {
     
     const lapTimeMs = end.crossingTime - start.crossingTime;
     
-    // Find max speed in this lap
+    // Find max and min speed in this lap
     let maxSpeedMph = 0;
     let maxSpeedKph = 0;
+    let minSpeedMph = Infinity;
+    let minSpeedKph = Infinity;
     
     for (let j = start.sampleIndex; j <= end.sampleIndex && j < samples.length; j++) {
       if (samples[j].speedMph > maxSpeedMph) {
         maxSpeedMph = samples[j].speedMph;
         maxSpeedKph = samples[j].speedKph;
+      }
+      if (samples[j].speedMph < minSpeedMph) {
+        minSpeedMph = samples[j].speedMph;
+        minSpeedKph = samples[j].speedKph;
       }
     }
     
@@ -144,6 +150,8 @@ export function calculateLaps(samples: GpsSample[], track: Track): Lap[] {
       lapTimeMs,
       maxSpeedMph,
       maxSpeedKph,
+      minSpeedMph: minSpeedMph === Infinity ? 0 : minSpeedMph,
+      minSpeedKph: minSpeedKph === Infinity ? 0 : minSpeedKph,
       startIndex: start.sampleIndex,
       endIndex: end.sampleIndex
     });

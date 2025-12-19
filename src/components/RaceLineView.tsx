@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import L from 'leaflet';
 import { GpsSample, Track } from '@/types/racing';
 import 'leaflet/dist/leaflet.css';
@@ -13,6 +13,7 @@ interface RaceLineViewProps {
     minLon: number;
     maxLon: number;
   };
+  useKph?: boolean;
 }
 
 // Get speed color (green -> yellow -> orange -> red)
@@ -40,11 +41,34 @@ function getSpeedColor(speedMph: number, maxSpeed: number): string {
   }
 }
 
-export function RaceLineView({ samples, currentIndex, track, bounds }: RaceLineViewProps) {
+// Create SVG triangle/arrow marker pointing up (0 degrees)
+function createArrowIcon(heading: number): L.DivIcon {
+  // SVG arrow pointing up, we rotate it via CSS
+  const svg = `
+    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" 
+         style="transform: rotate(${heading}deg); transform-origin: center;">
+      <polygon 
+        points="10,2 18,18 10,14 2,18" 
+        fill="hsl(180, 70%, 55%)" 
+        stroke="hsl(220, 20%, 10%)" 
+        stroke-width="1.5"
+      />
+    </svg>
+  `;
+  
+  return L.divIcon({
+    html: svg,
+    className: 'arrow-marker',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10], // Center of the icon
+  });
+}
+
+export function RaceLineView({ samples, currentIndex, track, bounds, useKph = false }: RaceLineViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const polylineLayerRef = useRef<L.LayerGroup | null>(null);
-  const markerRef = useRef<L.CircleMarker | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
   const startFinishRef = useRef<L.Polyline | null>(null);
 
   // Calculate max speed for color scaling
@@ -145,13 +169,22 @@ export function RaceLineView({ samples, currentIndex, track, bounds }: RaceLineV
 
     const sample = samples[currentIndex];
     
-    // Create marker
-    markerRef.current = L.circleMarker([sample.lat, sample.lon], {
-      radius: 8,
-      fillColor: 'hsl(180, 70%, 55%)',
-      fillOpacity: 1,
-      color: 'hsl(220, 20%, 10%)',
-      weight: 2,
+    // Get heading - use the sample's heading, or calculate from previous sample
+    let heading = sample.heading ?? 0;
+    
+    // If no heading data, try to calculate from movement direction
+    if (heading === 0 && currentIndex > 0) {
+      const prevSample = samples[currentIndex - 1];
+      const dLat = sample.lat - prevSample.lat;
+      const dLon = sample.lon - prevSample.lon;
+      if (Math.abs(dLat) > 0.00001 || Math.abs(dLon) > 0.00001) {
+        heading = (Math.atan2(dLon, dLat) * 180 / Math.PI + 360) % 360;
+      }
+    }
+    
+    // Create arrow marker with heading
+    markerRef.current = L.marker([sample.lat, sample.lon], {
+      icon: createArrowIcon(heading),
     }).addTo(map);
   }, [currentIndex, samples]);
 
@@ -169,7 +202,7 @@ export function RaceLineView({ samples, currentIndex, track, bounds }: RaceLineV
       
       {/* Speed legend */}
       <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm border border-border rounded p-2 z-[1000]">
-        <div className="text-xs text-muted-foreground mb-1">Speed</div>
+        <div className="text-xs text-muted-foreground mb-1">Speed ({useKph ? 'kph' : 'mph'})</div>
         <div className="w-24 h-3 speed-gradient rounded" />
         <div className="flex justify-between text-xs text-muted-foreground mt-1 font-mono">
           <span>Slow</span>

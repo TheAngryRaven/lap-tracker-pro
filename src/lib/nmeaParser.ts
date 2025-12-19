@@ -50,6 +50,7 @@ interface ParsedRmc {
   lon: number;
   timeMs: number; // ms since midnight
   speedMps: number | null;
+  heading: number | null; // Course over ground in degrees
   date: { day: number; month: number; year: number } | null;
   valid: boolean;
 }
@@ -87,6 +88,8 @@ function parseRmcSentence(sentence: string): ParsedRmc | null {
   if (lat === 0 || lon === 0) return null;
   
   const speedKnots = parseFloat(parts[7]) || 0;
+  // parts[8] is course over ground (heading) in degrees
+  const heading = parts[8] ? parseFloat(parts[8]) : null;
   const date = parseNmeaDate(parts[9]);
   
   const timeMs = (time.hours * 3600 + time.minutes * 60 + time.seconds) * 1000 + time.ms;
@@ -96,6 +99,7 @@ function parseRmcSentence(sentence: string): ParsedRmc | null {
     lon,
     timeMs,
     speedMps: knotsToMps(speedKnots),
+    heading: heading !== null && !isNaN(heading) ? heading : null,
     date,
     valid: true
   };
@@ -338,6 +342,7 @@ export function parseDatalog(content: string): ParsedData {
       speedMps,
       speedMph: speedMps * 2.23694,
       speedKph: speedMps * 3.6,
+      heading: parsed.heading ?? undefined,
       rawNmea: nmeaSentence,
       extraFields
     });

@@ -7,6 +7,7 @@ export interface GpsSample {
   speedMps: number; // meters per second
   speedMph: number;
   speedKph: number;
+  heading?: number; // degrees (0-360, from RMC course field)
   rawNmea?: string;
   extraFields: Record<string, number>;
 }
@@ -32,6 +33,8 @@ export interface Lap {
   lapTimeMs: number;
   maxSpeedMph: number;
   maxSpeedKph: number;
+  minSpeedMph: number;
+  minSpeedKph: number;
   startIndex: number;
   endIndex: number;
 }
