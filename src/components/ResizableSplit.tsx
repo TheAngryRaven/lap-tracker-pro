@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 interface ResizableSplitProps {
   topPanel: React.ReactNode;
@@ -18,52 +18,56 @@ export function ResizableSplit({
   const containerRef = useRef<HTMLDivElement>(null);
   const ratioRef = useRef(defaultRatio);
 
-  const DIVIDER_HEIGHT = 8; // h-2 = 0.5rem
+  const DIVIDER_HEIGHT = 8;
 
-  const [topPx, setTopPx] = useState<number>(0);
+  // Store top panel height in pixels. We'll compute this from the container height.
+  const [topPx, setTopPx] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Clamp the top panel height to valid range
   const clampTopPx = useCallback(
-    (desiredTopPx: number, availableHeight: number) => {
+    (desiredTopPx: number, containerHeight: number) => {
+      const availableHeight = containerHeight - DIVIDER_HEIGHT;
       const maxTop = Math.max(minTopHeight, availableHeight - minBottomHeight);
       return Math.max(minTopHeight, Math.min(maxTop, desiredTopPx));
     },
     [minTopHeight, minBottomHeight],
   );
 
-  const measureAndSetFromRatio = useCallback(() => {
+  // Measure container and set topPx from ratio
+  const syncFromRatio = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const availableHeight = container.clientHeight - DIVIDER_HEIGHT;
-    if (availableHeight <= 0) return;
+    const containerHeight = container.clientHeight;
+    if (containerHeight <= 0) return;
 
+    const availableHeight = containerHeight - DIVIDER_HEIGHT;
     const desired = availableHeight * ratioRef.current;
-    const clamped = clampTopPx(desired, availableHeight);
+    const clamped = clampTopPx(desired, containerHeight);
 
+    // Update ratio to reflect clamped value
     ratioRef.current = clamped / availableHeight;
     setTopPx(clamped);
   }, [clampTopPx]);
 
-  // Set initial size before paint to avoid the bottom panel "starting full height".
-  useLayoutEffect(() => {
-    measureAndSetFromRatio();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Keep split stable on container resize.
+  // Initial measurement + resize observer
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    // Initial sync
+    syncFromRatio();
+
     const ro = new ResizeObserver(() => {
-      measureAndSetFromRatio();
+      syncFromRatio();
     });
 
     ro.observe(container);
     return () => ro.disconnect();
-  }, [measureAndSetFromRatio]);
+  }, [syncFromRatio]);
 
+  // Handle drag start
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -74,6 +78,7 @@ export function ResizableSplit({
     setIsDragging(true);
   }, []);
 
+  // Handle drag movement
   useEffect(() => {
     if (!isDragging) return;
 
@@ -82,12 +87,13 @@ export function ResizableSplit({
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
-      const availableHeight = rect.height - DIVIDER_HEIGHT;
-      if (availableHeight <= 0) return;
+      const containerHeight = rect.height;
+      if (containerHeight <= 0) return;
 
       const desiredTop = clientY - rect.top;
-      const clamped = clampTopPx(desiredTop, availableHeight);
+      const clamped = clampTopPx(desiredTop, containerHeight);
 
+      const availableHeight = containerHeight - DIVIDER_HEIGHT;
       ratioRef.current = clamped / availableHeight;
       setTopPx(clamped);
     };
@@ -104,44 +110,63 @@ export function ResizableSplit({
 
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleEnd);
-
     document.addEventListener("touchmove", handleTouchMove, { passive: false });
     document.addEventListener("touchend", handleEnd);
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleEnd);
-      document.removeEventListener("touchmove", handleTouchMove as any);
+      document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleEnd);
     };
   }, [isDragging, clampTopPx]);
 
+  // Compute bottom panel height
+  const getBottomPx = () => {
+    const container = containerRef.current;
+    if (!container || topPx === null) return 0;
+    return container.clientHeight - topPx - DIVIDER_HEIGHT;
+  };
+
+  const bottomPx = topPx !== null ? getBottomPx() : 0;
+
   return (
     <div
       ref={containerRef}
-      className="h-full overflow-hidden grid"
-      style={{
-        gridTemplateRows: `${topPx}px ${DIVIDER_HEIGHT}px 1fr`,
-      }}
+      className="relative w-full h-full overflow-hidden"
     >
-      {/* Top Panel */}
-      <div className="overflow-hidden">{topPanel}</div>
+      {/* Top Panel - absolute positioned from top */}
+      <div
+        className="absolute top-0 left-0 right-0 overflow-hidden"
+        style={{ height: topPx !== null ? `${topPx}px` : '70%' }}
+      >
+        {topPanel}
+      </div>
 
-      {/* Divider */}
+      {/* Divider - absolute positioned */}
       <div
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
         className={`
-          bg-border cursor-row-resize flex items-center justify-center select-none touch-none
-          hover:bg-primary/30 transition-colors
+          absolute left-0 right-0 cursor-row-resize flex items-center justify-center select-none touch-none z-10
+          bg-border hover:bg-primary/30 transition-colors
           ${isDragging ? "bg-primary/50" : ""}
         `}
+        style={{
+          top: topPx !== null ? `${topPx}px` : '70%',
+          height: `${DIVIDER_HEIGHT}px`,
+        }}
       >
         <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
       </div>
 
-      {/* Bottom Panel */}
-      <div className="overflow-hidden">{bottomPanel}</div>
+      {/* Bottom Panel - absolute positioned, anchored to bottom */}
+      <div
+        className="absolute left-0 right-0 bottom-0 overflow-hidden"
+        style={{ height: bottomPx > 0 ? `${bottomPx}px` : '30%' }}
+      >
+        {bottomPanel}
+      </div>
     </div>
   );
 }

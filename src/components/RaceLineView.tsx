@@ -71,6 +71,22 @@ export function RaceLineView({ samples, currentIndex, track, bounds, useKph = fa
   const markerRef = useRef<L.Marker | null>(null);
   const startFinishRef = useRef<L.Polyline | null>(null);
 
+  // Invalidate map size when container resizes
+  useEffect(() => {
+    const container = containerRef.current;
+    const map = mapRef.current;
+    if (!container) return;
+
+    const ro = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    });
+
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
+
   // Calculate max speed for color scaling
   const maxSpeed = useMemo(() => {
     return Math.max(...samples.map(s => s.speedMph), 1);
