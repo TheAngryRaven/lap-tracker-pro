@@ -197,7 +197,7 @@ export default function Index() {
             >
               <Github className="w-5 h-5" />
               <span className="text-sm">View on GitHub</span>
-            </a> | 
+            </a>
             <a
               href="https://github.com/TheAngryRaven/BirdsEye"
               target="_blank"
@@ -205,8 +205,8 @@ export default function Index() {
               className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mt-4"
             >
               <Github className="w-5 h-5" />
-              <span className="text-sm">View Datalogger on GitHub</span>
-            </a> | 
+              <span className="text-sm">View Datalogger</span>
+            </a>
             <a
               href="https://github.com/TheAngryRaven/DovesLapTimer"
               target="_blank"
@@ -214,7 +214,7 @@ export default function Index() {
               className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mt-4"
             >
               <Github className="w-5 h-5" />
-              <span className="text-sm">View Timer Library on GitHub</span>
+              <span className="text-sm">View Timer Library</span>
             </a>
           </div>
         </main>
