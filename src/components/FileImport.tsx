@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Upload, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { parseDatalog } from '@/lib/nmeaParser';
+import { parseUbxFile, isUbxData } from '@/lib/ubxParser';
 import { ParsedData } from '@/types/racing';
 
 interface FileImportProps {
@@ -22,8 +23,18 @@ export function FileImport({ onDataLoaded }: FileImportProps) {
     setFileName(file.name);
 
     try {
-      const text = await file.text();
-      const data = parseDatalog(text);
+      const buffer = await file.arrayBuffer();
+      
+      // Check if it's UBX binary data
+      let data: ParsedData;
+      if (file.name.toLowerCase().endsWith('.ubx') || isUbxData(buffer)) {
+        data = parseUbxFile(buffer);
+      } else {
+        // Try as text (NMEA/CSV)
+        const text = new TextDecoder().decode(buffer);
+        data = parseDatalog(text);
+      }
+      
       onDataLoaded(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to parse file');
@@ -65,14 +76,14 @@ export function FileImport({ onDataLoaded }: FileImportProps) {
           {isLoading ? 'Processing...' : 'Drop datalog file here'}
         </p>
         <p className="text-sm">
-          Supports CSV with NMEA sentences, or .nmea files
+          Supports CSV with NMEA, .nmea, .txt, or .ubx files
         </p>
       </div>
 
       <label>
         <input
           type="file"
-          accept=".csv,.nmea,.txt"
+          accept=".csv,.nmea,.txt,.ubx"
           onChange={handleFileChange}
           className="hidden"
           disabled={isLoading}
