@@ -354,12 +354,6 @@ export function TrackEditor({ selectedTrack, onTrackSelect }: TrackEditorProps) 
         )}
       </div>
 
-      {selectedTrack && (
-        <div className="text-xs text-muted-foreground font-mono space-y-1 p-2 bg-muted/30 rounded">
-          <p>A: {selectedTrack.startFinishA.lat.toFixed(6)}, {selectedTrack.startFinishA.lon.toFixed(6)}</p>
-          <p>B: {selectedTrack.startFinishB.lat.toFixed(6)}, {selectedTrack.startFinishB.lon.toFixed(6)}</p>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,14 +1,15 @@
 import { Lap } from '@/types/racing';
 import { formatLapTime } from '@/lib/lapCalculation';
-import { Trophy, Zap } from 'lucide-react';
+import { Trophy, Zap, Snail } from 'lucide-react';
 
 interface LapTableProps {
   laps: Lap[];
   onLapSelect?: (lap: Lap) => void;
   selectedLapNumber?: number | null;
+  useKph?: boolean;
 }
 
-export function LapTable({ laps, onLapSelect, selectedLapNumber }: LapTableProps) {
+export function LapTable({ laps, onLapSelect, selectedLapNumber, useKph = false }: LapTableProps) {
   if (laps.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -20,12 +21,26 @@ export function LapTable({ laps, onLapSelect, selectedLapNumber }: LapTableProps
     );
   }
 
-  // Find fastest lap and fastest top speed
+  const speedUnit = useKph ? 'kph' : 'mph';
+
+  // Find fastest lap, fastest top speed, and slowest min speed
   const fastestLapIdx = laps.reduce((minIdx, lap, idx, arr) => 
     lap.lapTimeMs < arr[minIdx].lapTimeMs ? idx : minIdx, 0);
   
-  const fastestSpeedIdx = laps.reduce((maxIdx, lap, idx, arr) => 
-    lap.maxSpeedMph > arr[maxIdx].maxSpeedMph ? idx : maxIdx, 0);
+  const fastestSpeedIdx = laps.reduce((maxIdx, lap, idx, arr) => {
+    const currentMax = useKph ? arr[maxIdx].maxSpeedKph : arr[maxIdx].maxSpeedMph;
+    const lapMax = useKph ? lap.maxSpeedKph : lap.maxSpeedMph;
+    return lapMax > currentMax ? idx : maxIdx;
+  }, 0);
+
+  const slowestMinSpeedIdx = laps.reduce((minIdx, lap, idx, arr) => {
+    const currentMin = useKph ? arr[minIdx].minSpeedKph : arr[minIdx].minSpeedMph;
+    const lapMin = useKph ? lap.minSpeedKph : lap.minSpeedMph;
+    return lapMin < currentMin ? idx : minIdx;
+  }, 0);
+
+  const getMaxSpeed = (lap: Lap) => useKph ? lap.maxSpeedKph : lap.maxSpeedMph;
+  const getMinSpeed = (lap: Lap) => useKph ? lap.minSpeedKph : lap.minSpeedMph;
 
   return (
     <div className="h-full overflow-auto scrollbar-thin">
@@ -35,12 +50,14 @@ export function LapTable({ laps, onLapSelect, selectedLapNumber }: LapTableProps
             <th className="px-4 py-3 font-medium">Lap</th>
             <th className="px-4 py-3 font-medium">Time</th>
             <th className="px-4 py-3 font-medium">Top Speed</th>
+            <th className="px-4 py-3 font-medium">Min Speed</th>
           </tr>
         </thead>
         <tbody>
           {laps.map((lap, idx) => {
             const isFastest = idx === fastestLapIdx;
             const hasFastestSpeed = idx === fastestSpeedIdx;
+            const hasSlowestMinSpeed = idx === slowestMinSpeedIdx;
             
             return (
               <tr
@@ -67,10 +84,20 @@ export function LapTable({ laps, onLapSelect, selectedLapNumber }: LapTableProps
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm">
-                      {lap.maxSpeedMph.toFixed(1)} mph
+                      {getMaxSpeed(lap).toFixed(1)} {speedUnit}
                     </span>
                     {hasFastestSpeed && (
                       <Zap className="w-4 h-4 text-accent" />
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`font-mono text-sm ${hasSlowestMinSpeed ? 'text-orange-500' : ''}`}>
+                      {getMinSpeed(lap).toFixed(1)} {speedUnit}
+                    </span>
+                    {hasSlowestMinSpeed && (
+                      <Snail className="w-4 h-4 text-orange-500" />
                     )}
                   </div>
                 </td>
@@ -92,7 +119,13 @@ export function LapTable({ laps, onLapSelect, selectedLapNumber }: LapTableProps
           <div>
             <span className="text-muted-foreground">Max Speed: </span>
             <span className="font-mono text-accent font-semibold">
-              {laps[fastestSpeedIdx].maxSpeedMph.toFixed(1)} mph
+              {getMaxSpeed(laps[fastestSpeedIdx]).toFixed(1)} {speedUnit}
+            </span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Slowest Min: </span>
+            <span className="font-mono text-orange-500 font-semibold">
+              {getMinSpeed(laps[slowestMinSpeedIdx]).toFixed(1)} {speedUnit}
             </span>
           </div>
         </div>
