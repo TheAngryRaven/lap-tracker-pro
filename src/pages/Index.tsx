@@ -188,34 +188,36 @@ export default function Index() {
               </div>
             </div>
 
-            {/* GitHub link */}
-            <a
-              href="https://github.com/TheAngryRaven/lap-tracker-pro"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mt-4"
-            >
-              <Github className="w-5 h-5" />
-              <span className="text-sm">View on GitHub</span>
-            </a>
-            <a
-              href="https://github.com/TheAngryRaven/BirdsEye"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mt-4"
-            >
-              <Github className="w-5 h-5" />
-              <span className="text-sm">View Datalogger</span>
-            </a>
-            <a
-              href="https://github.com/TheAngryRaven/DovesLapTimer"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mt-4"
-            >
-              <Github className="w-5 h-5" />
-              <span className="text-sm">View Timer Library</span>
-            </a>
+            {/* GitHub links */}
+            <div className="flex items-center justify-center gap-8 mt-4">
+              <a
+                href="https://github.com/TheAngryRaven/lap-tracker-pro"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Github className="w-5 h-5" />
+                <span className="text-sm">View on GitHub</span>
+              </a>
+              <a
+                href="https://github.com/TheAngryRaven/BirdsEye"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Github className="w-5 h-5" />
+                <span className="text-sm">View Datalogger</span>
+              </a>
+              <a
+                href="https://github.com/TheAngryRaven/DovesLapTimer"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Github className="w-5 h-5" />
+                <span className="text-sm">View Timer Library</span>
+              </a>
+            </div>
           </div>
         </main>
       </div>
