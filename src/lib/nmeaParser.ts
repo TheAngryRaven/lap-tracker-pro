@@ -246,25 +246,19 @@ export function parseDatalog(content: string): ParsedData {
   };
 }
 
-// Parse CSV line respecting quotes
+// Parse CSV line using tab delimiter (0x09)
+// NMEA sentences use commas internally, so we use tab as the field separator
 function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = '';
-  let inQuotes = false;
+  // Split by tab character
+  const fields = line.split('\t');
   
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    
-    if (char === '"') {
-      inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
-      result.push(current.trim());
-      current = '';
-    } else {
-      current += char;
+  // Clean up each field - remove surrounding quotes and trim
+  return fields.map(field => {
+    let cleaned = field.trim();
+    // Remove surrounding quotes if present
+    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+      cleaned = cleaned.slice(1, -1);
     }
-  }
-  
-  result.push(current.trim());
-  return result;
+    return cleaned;
+  });
 }
