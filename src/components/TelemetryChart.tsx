@@ -7,6 +7,7 @@ interface TelemetryChartProps {
   currentIndex: number;
   onScrub: (index: number) => void;
   onFieldToggle: (fieldName: string) => void;
+  useKph?: boolean;
 }
 
 const COLORS = [
@@ -23,12 +24,16 @@ export function TelemetryChart({
   fieldMappings, 
   currentIndex, 
   onScrub,
-  onFieldToggle 
+  onFieldToggle,
+  useKph = false
 }: TelemetryChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [isDragging, setIsDragging] = useState(false);
+
+  const speedUnit = useKph ? 'KPH' : 'MPH';
+  const getSpeed = (sample: GpsSample) => useKph ? sample.speedKph : sample.speedMph;
 
   // Handle resize
   useEffect(() => {
@@ -96,7 +101,7 @@ export function TelemetryChart({
     }
 
     // Find speed range
-    const speeds = samples.map(s => s.speedMph);
+    const speeds = samples.map(s => getSpeed(s));
     const maxSpeed = Math.ceil(Math.max(...speeds) / 10) * 10;
     const minSpeed = 0;
 
@@ -107,7 +112,7 @@ export function TelemetryChart({
     
     for (let i = 0; i < samples.length; i++) {
       const x = padding.left + (i / (samples.length - 1)) * chartWidth;
-      const y = padding.top + (1 - (samples[i].speedMph - minSpeed) / (maxSpeed - minSpeed)) * chartHeight;
+      const y = padding.top + (1 - (getSpeed(samples[i]) - minSpeed) / (maxSpeed - minSpeed)) * chartHeight;
       
       if (i === 0) {
         ctx.moveTo(x, y);
@@ -174,7 +179,7 @@ export function TelemetryChart({
     ctx.translate(12, padding.top + chartHeight / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
-    ctx.fillText('MPH', 0, 0);
+    ctx.fillText(speedUnit, 0, 0);
     ctx.restore();
 
     // Draw X axis labels (time)
@@ -201,7 +206,7 @@ export function TelemetryChart({
       ctx.stroke();
 
       // Current values box
-      const currentSpeed = samples[currentIndex].speedMph;
+      const currentSpeed = getSpeed(samples[currentIndex]);
       const boxX = Math.min(x + 10, dimensions.width - 120);
       const boxY = padding.top + 10;
       
@@ -218,7 +223,7 @@ export function TelemetryChart({
 
       ctx.fillStyle = COLORS[0];
       ctx.textAlign = 'left';
-      ctx.fillText(`Speed: ${currentSpeed.toFixed(1)} mph`, boxX + 8, boxY + 14);
+      ctx.fillText(`Speed: ${currentSpeed.toFixed(1)} ${speedUnit.toLowerCase()}`, boxX + 8, boxY + 14);
 
       let fieldOffset = 1;
       enabledFields.forEach((field, idx) => {
@@ -231,7 +236,7 @@ export function TelemetryChart({
       });
     }
 
-  }, [samples, currentIndex, dimensions, enabledFields]);
+  }, [samples, currentIndex, dimensions, enabledFields, useKph, speedUnit]);
 
   // Scrub handling
   const handleScrub = useCallback((clientX: number) => {
@@ -279,7 +284,7 @@ export function TelemetryChart({
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border flex-wrap">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[0] }} />
-          <span className="text-xs font-mono">Speed</span>
+          <span className="text-xs font-mono">Speed ({speedUnit})</span>
         </div>
         {fieldMappings.map((field, idx) => (
           <button

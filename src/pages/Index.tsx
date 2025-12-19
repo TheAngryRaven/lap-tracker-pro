@@ -359,6 +359,7 @@ export default function Index() {
               currentIndex={currentIndex}
               onScrub={handleScrub}
               onFieldToggle={handleFieldToggle}
+              useKph={useKph}
             />
           }
         />
