@@ -134,6 +134,22 @@
       hsl(var(--speed-max))
     );
   }
+  
+  /* Leaflet map styling overrides */
+  .leaflet-container {
+    background: hsl(var(--background));
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  .leaflet-control-attribution {
+    background: hsl(var(--card) / 0.8) !important;
+    color: hsl(var(--muted-foreground)) !important;
+    font-size: 10px;
+  }
+  
+  .leaflet-control-attribution a {
+    color: hsl(var(--primary)) !important;
+  }
 }
 
 @layer utilities {
