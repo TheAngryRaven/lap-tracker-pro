@@ -27,15 +27,21 @@ export default function Index() {
   const handleLoadSample = useCallback(async () => {
     setIsLoadingSample(true);
     try {
+      // Load tracks and find Orlando Kart Center
+      const { loadTracks } = await import('@/lib/trackStorage');
+      const tracks = loadTracks();
+      const okcTrack = tracks.find(t => t.id === 'orlando-kart-center') ?? null;
+      
       const response = await fetch('/samples/okc-tillotson-plain.nmea');
       const text = await response.text();
       const parsedData = parseDatalog(text);
       setData(parsedData);
       setFieldMappings(parsedData.fieldMappings);
       setCurrentIndex(0);
+      setSelectedTrack(okcTrack);
       
-      if (selectedTrack) {
-        const computedLaps = calculateLaps(parsedData.samples, selectedTrack);
+      if (okcTrack) {
+        const computedLaps = calculateLaps(parsedData.samples, okcTrack);
         setLaps(computedLaps);
       }
     } catch (e) {
@@ -43,7 +49,7 @@ export default function Index() {
     } finally {
       setIsLoadingSample(false);
     }
-  }, [selectedTrack]);
+  }, []);
 
   // Filter samples to selected lap
   const filteredSamples = useMemo((): GpsSample[] => {
