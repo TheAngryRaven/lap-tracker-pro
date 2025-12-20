@@ -119,7 +119,7 @@ export function findSpeedEvents(samples: GpsSample[], options: SpeedEventOptions
           if (passesSwing && isAlternating) {
             events.push({
               type: candidateType,
-              speed: Math.round(candidateSpeed),
+              speed: candidateSpeed,
               lat: sample.lat,
               lon: sample.lon,
               index: candidateIndex,
@@ -140,7 +140,7 @@ export function findSpeedEvents(samples: GpsSample[], options: SpeedEventOptions
               if (shouldReplace) {
                 events[events.length - 1] = {
                   type: candidateType,
-                  speed: Math.round(candidateSpeed),
+                  speed: candidateSpeed,
                   lat: sample.lat,
                   lon: sample.lon,
                   index: candidateIndex,
