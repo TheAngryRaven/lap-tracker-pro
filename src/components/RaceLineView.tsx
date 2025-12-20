@@ -376,7 +376,7 @@ export function RaceLineView({ samples, referenceSamples = [], currentIndex, cou
               {/* Delta section */}
               {(paceDiff !== null || deltaTopSpeed !== null || deltaMinSpeed !== null) && (
                 <div className="mt-2 pt-2 border-t border-border space-y-1">
-                  <div className="text-xs text-muted-foreground mb-1">
+                  <div className="text-xs text-muted-foreground mb-1 text-center">
                     Δ {paceDiffLabel}
                   </div>
                   {paceDiff !== null && (
