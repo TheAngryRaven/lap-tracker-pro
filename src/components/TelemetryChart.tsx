@@ -531,19 +531,27 @@ export function TelemetryChart({
           </button>
         )}
         
-        {fieldMappings.map((field, idx) => (
-          <button
-            key={field.name}
-            onClick={() => onFieldToggle(field.name)}
-            className={`flex items-center gap-2 ${field.enabled ? '' : 'opacity-40'}`}
-          >
-            <div 
-              className="w-3 h-3 rounded-full" 
-              style={{ backgroundColor: COLORS[(idx + 1) % COLORS.length] }} 
-            />
-            <span className="text-xs font-mono">{field.name}</span>
-          </button>
-        ))}
+        {fieldMappings.map((field) => {
+          // Calculate the color index based on position in enabled fields (matching chart drawing)
+          const enabledIndex = enabledFields.findIndex(f => f.name === field.name);
+          const colorIndex = field.enabled && enabledIndex !== -1 
+            ? (enabledIndex + 1) % COLORS.length 
+            : 1; // Default color when disabled
+          
+          return (
+            <button
+              key={field.name}
+              onClick={() => onFieldToggle(field.name)}
+              className={`flex items-center gap-2 ${field.enabled ? '' : 'opacity-40'}`}
+            >
+              <div 
+                className="w-3 h-3 rounded-full" 
+                style={{ backgroundColor: COLORS[colorIndex] }} 
+              />
+              <span className="text-xs font-mono">{field.name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Chart */}
