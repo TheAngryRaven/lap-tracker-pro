@@ -66,9 +66,6 @@ export function FileImport({ onDataLoaded }: FileImportProps) {
         <p className="text-lg font-medium">{isLoading ? "Processing..." : "Drop datalog file here"}</p>
         <p className="text-sm">Supports CSV with NMEA sentences, or .nmea files</p>
         <p className="text-sm">
-          <b>DATALOGS NEVER LEAVE YOUR DEVICE</b>
-        </p>
-        <p className="text-sm">
           <i>All processing done locally</i>
         </p>
       </div>
