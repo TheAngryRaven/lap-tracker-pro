@@ -18,6 +18,8 @@ interface RaceLineViewProps {
     maxLon: number;
   };
   useKph?: boolean;
+  paceDiff?: number | null;
+  paceDiffLabel?: 'best' | 'ref';
 }
 
 // Get speed color (green -> yellow -> orange -> red)
@@ -98,7 +100,7 @@ function createSpeedEventIcon(event: SpeedEvent, useKph: boolean): L.DivIcon {
   });
 }
 
-export function RaceLineView({ samples, referenceSamples = [], currentIndex, course, bounds, useKph = false }: RaceLineViewProps) {
+export function RaceLineView({ samples, referenceSamples = [], currentIndex, course, bounds, useKph = false, paceDiff = null, paceDiffLabel = 'best' }: RaceLineViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const polylineLayerRef = useRef<L.LayerGroup | null>(null);
@@ -368,6 +370,17 @@ export function RaceLineView({ samples, referenceSamples = [], currentIndex, cou
                   {avgMin !== null ? `${convertSpeed(avgMin).toFixed(1)} ${unit}` : '—'}
                 </span>
               </div>
+              {paceDiff !== null && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Diff ({paceDiffLabel}):</span>
+                  <span 
+                    className="font-mono"
+                    style={{ color: paceDiff < 0 ? 'hsl(142, 76%, 45%)' : paceDiff > 0 ? 'hsl(0, 84%, 55%)' : 'hsl(var(--muted-foreground))' }}
+                  >
+                    {paceDiff > 0 ? '+' : ''}{paceDiff.toFixed(2)}s
+                  </span>
+                </div>
+              )}
             </div>
           );
         })()}

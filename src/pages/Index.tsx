@@ -83,6 +83,16 @@ export default function Index() {
     return data.samples.slice(refLap.startIndex, refLap.endIndex + 1);
   }, [data, laps, referenceLapNumber]);
 
+  // Get fastest lap samples for pace comparison when no reference selected
+  const fastestLapSamples = useMemo((): GpsSample[] => {
+    if (!data || laps.length === 0) return [];
+    
+    const fastestLap = laps.reduce((min, lap) => 
+      lap.lapTimeMs < min.lapTimeMs ? lap : min, laps[0]);
+    
+    return data.samples.slice(fastestLap.startIndex, fastestLap.endIndex + 1);
+  }, [data, laps]);
+
   // Calculate pace and reference speed when reference is selected
   const { paceData, referenceSpeedData } = useMemo(() => {
     if (referenceSamples.length === 0 || filteredSamples.length === 0) {
@@ -94,6 +104,29 @@ export default function Index() {
       referenceSpeedData: calculateReferenceSpeed(filteredSamples, referenceSamples, useKph)
     };
   }, [filteredSamples, referenceSamples, useKph]);
+
+  // Calculate pace diff for display (vs reference if selected, else vs best)
+  const { paceDiff, paceDiffLabel } = useMemo((): { paceDiff: number | null; paceDiffLabel: 'best' | 'ref' } => {
+    if (filteredSamples.length === 0 || selectedLapNumber === null) {
+      return { paceDiff: null, paceDiffLabel: 'best' };
+    }
+    
+    // If reference is selected, use reference pace
+    if (referenceSamples.length > 0 && paceData.length > 0) {
+      // Get the last valid pace value (end of lap diff)
+      const lastPace = paceData.filter(p => p !== null).pop() ?? null;
+      return { paceDiff: lastPace, paceDiffLabel: 'ref' };
+    }
+    
+    // Otherwise, compare to fastest lap
+    if (fastestLapSamples.length > 0) {
+      const bestPaceData = calculatePace(filteredSamples, fastestLapSamples);
+      const lastPace = bestPaceData.filter(p => p !== null).pop() ?? null;
+      return { paceDiff: lastPace, paceDiffLabel: 'best' };
+    }
+    
+    return { paceDiff: null, paceDiffLabel: 'best' };
+  }, [filteredSamples, referenceSamples, fastestLapSamples, paceData, selectedLapNumber]);
 
   // Compute bounds for filtered samples
   const filteredBounds = useMemo(() => {
@@ -332,6 +365,8 @@ export default function Index() {
                     course={selectedCourse}
                     bounds={filteredBounds!}
                     useKph={useKph}
+                    paceDiff={paceDiff}
+                    paceDiffLabel={paceDiffLabel}
                   />
                 ) : (
                   <LapTable 
