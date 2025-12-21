@@ -1,17 +1,28 @@
-import { Track, Course, LegacyTrack } from '@/types/racing';
+import { Track, Course, LegacyTrack, SectorLine } from '@/types/racing';
 
 const STORAGE_KEY = 'racing-datalog-tracks-v2';
 const LEGACY_STORAGE_KEY = 'racing-datalog-tracks';
 
+interface DefaultCourseJson {
+  name: string;
+  start_a_lat: number;
+  start_a_lng: number;
+  start_b_lat: number;
+  start_b_lng: number;
+  // Optional sector lines (flat format from JSON)
+  sector_2_a_lat?: number;
+  sector_2_a_lng?: number;
+  sector_2_b_lat?: number;
+  sector_2_b_lng?: number;
+  sector_3_a_lat?: number;
+  sector_3_a_lng?: number;
+  sector_3_b_lat?: number;
+  sector_3_b_lng?: number;
+}
+
 interface DefaultTracksJson {
   [trackName: string]: {
-    courses: Array<{
-      name: string;
-      start_a_lat: number;
-      start_a_lng: number;
-      start_b_lat: number;
-      start_b_lng: number;
-    }>;
+    courses: DefaultCourseJson[];
   };
 }
 
@@ -21,6 +32,19 @@ interface StoredData {
 
 // Cached default tracks (loaded once)
 let defaultTracksCache: Track[] | null = null;
+
+// Parse sector line from flat JSON format
+function parseSectorLineFromJson(
+  aLat?: number, aLng?: number, bLat?: number, bLng?: number
+): SectorLine | undefined {
+  if (aLat !== undefined && aLng !== undefined && bLat !== undefined && bLng !== undefined) {
+    return {
+      a: { lat: aLat, lon: aLng },
+      b: { lat: bLat, lon: bLng }
+    };
+  }
+  return undefined;
+}
 
 /**
  * Load default tracks from the static JSON file.
@@ -41,12 +65,30 @@ export async function loadDefaultTracks(): Promise<Track[]> {
     
     const tracks: Track[] = [];
     for (const [trackName, trackData] of Object.entries(json)) {
-      const courses: Course[] = trackData.courses.map(c => ({
-        name: c.name,
-        startFinishA: { lat: c.start_a_lat, lon: c.start_a_lng },
-        startFinishB: { lat: c.start_b_lat, lon: c.start_b_lng },
-        isUserDefined: false,
-      }));
+      const courses: Course[] = trackData.courses.map(c => {
+        const course: Course = {
+          name: c.name,
+          startFinishA: { lat: c.start_a_lat, lon: c.start_a_lng },
+          startFinishB: { lat: c.start_b_lat, lon: c.start_b_lng },
+          isUserDefined: false,
+        };
+        
+        // Parse sector lines if they exist
+        const sector2 = parseSectorLineFromJson(
+          c.sector_2_a_lat, c.sector_2_a_lng, c.sector_2_b_lat, c.sector_2_b_lng
+        );
+        const sector3 = parseSectorLineFromJson(
+          c.sector_3_a_lat, c.sector_3_a_lng, c.sector_3_b_lat, c.sector_3_b_lng
+        );
+        
+        // Only add sectors if both are present
+        if (sector2 && sector3) {
+          course.sector2 = sector2;
+          course.sector3 = sector3;
+        }
+        
+        return course;
+      });
       tracks.push({
         name: trackName,
         courses,
