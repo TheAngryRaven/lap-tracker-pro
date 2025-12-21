@@ -6,6 +6,7 @@ import { RaceLineView } from "@/components/RaceLineView";
 import { TelemetryChart } from "@/components/TelemetryChart";
 import { LapTable } from "@/components/LapTable";
 import { ResizableSplit } from "@/components/ResizableSplit";
+import { RangeSlider } from "@/components/RangeSlider";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -30,6 +31,8 @@ export default function Index() {
   const [referenceLapNumber, setReferenceLapNumber] = useState<number | null>(null);
   const [isLoadingSample, setIsLoadingSample] = useState(false);
   const [useKph, setUseKph] = useState(false);
+  // Range selection state (indices within filteredSamples)
+  const [visibleRange, setVisibleRange] = useState<[number, number]>([0, 0]);
 
   const selectedCourse: Course | null = selection?.course ?? null;
 
@@ -81,6 +84,20 @@ export default function Index() {
 
     return data.samples.slice(lap.startIndex, lap.endIndex + 1);
   }, [data, laps, selectedLapNumber]);
+
+  // Reset visible range when filtered samples change
+  useEffect(() => {
+    if (filteredSamples.length > 0) {
+      setVisibleRange([0, filteredSamples.length - 1]);
+    }
+  }, [filteredSamples.length, selectedLapNumber]);
+
+  // Visible samples based on range selection
+  const visibleSamples = useMemo((): GpsSample[] => {
+    if (filteredSamples.length === 0) return [];
+    const [start, end] = visibleRange;
+    return filteredSamples.slice(start, end + 1);
+  }, [filteredSamples, visibleRange]);
 
   // Get reference lap samples
   const referenceSamples = useMemo((): GpsSample[] => {
@@ -222,8 +239,19 @@ export default function Index() {
   );
 
   const handleScrub = useCallback((index: number) => {
-    setCurrentIndex(index);
-  }, []);
+    // Clamp to visible range
+    const clampedIndex = Math.max(0, Math.min(index, visibleRange[1] - visibleRange[0]));
+    setCurrentIndex(clampedIndex);
+  }, [visibleRange]);
+
+  const handleRangeChange = useCallback((newRange: [number, number]) => {
+    setVisibleRange(newRange);
+    // Clamp current index to new visible range
+    const visibleLength = newRange[1] - newRange[0];
+    if (currentIndex > visibleLength) {
+      setCurrentIndex(visibleLength);
+    }
+  }, [currentIndex]);
 
   const handleFieldToggle = useCallback((fieldName: string) => {
     setFieldMappings((prev) => prev.map((f) => (f.name === fieldName ? { ...f, enabled: !f.enabled } : f)));
@@ -355,14 +383,14 @@ export default function Index() {
             </Select>
           )}
 
-          {filteredSamples[currentIndex] && (
+          {visibleSamples[currentIndex] && (
             <div className="flex items-center gap-4 text-sm font-mono bg-muted/50 px-3 py-1.5 rounded">
               <span className="text-racing-telemetrySpeed">
-                {getCurrentSpeed(filteredSamples[currentIndex]).toFixed(1)} {speedUnit}
+                {getCurrentSpeed(visibleSamples[currentIndex]).toFixed(1)} {speedUnit}
               </span>
               {fieldMappings.filter((f) => f.enabled).slice(0, 2).map((field) => (
                 <span key={field.name} className="text-muted-foreground">
-                  {field.name}: {(filteredSamples[currentIndex].extraFields[field.name] ?? 0).toFixed(1)}
+                  {field.name}: {(visibleSamples[currentIndex].extraFields[field.name] ?? 0).toFixed(1)}
                 </span>
               ))}
             </div>
@@ -408,7 +436,7 @@ export default function Index() {
               <div className="flex-1 overflow-hidden">
                 {topPanelView === "raceline" ? (
                   <RaceLineView
-                    samples={filteredSamples}
+                    samples={visibleSamples}
                     referenceSamples={referenceSamples}
                     currentIndex={currentIndex}
                     course={selectedCourse}
@@ -433,17 +461,41 @@ export default function Index() {
             </div>
           }
           bottomPanel={
-            <TelemetryChart
-              samples={filteredSamples}
-              fieldMappings={fieldMappings}
-              currentIndex={currentIndex}
-              onScrub={handleScrub}
-              onFieldToggle={handleFieldToggle}
-              useKph={useKph}
-              paceData={paceData}
-              referenceSpeedData={referenceSpeedData}
-              hasReference={referenceLapNumber !== null}
-            />
+            <div className="h-full flex flex-col">
+              <div className="flex-1 min-h-0">
+                <TelemetryChart
+                  samples={visibleSamples}
+                  fieldMappings={fieldMappings}
+                  currentIndex={currentIndex}
+                  onScrub={handleScrub}
+                  onFieldToggle={handleFieldToggle}
+                  useKph={useKph}
+                  paceData={paceData.slice(visibleRange[0], visibleRange[1] + 1)}
+                  referenceSpeedData={referenceSpeedData.slice(visibleRange[0], visibleRange[1] + 1)}
+                  hasReference={referenceLapNumber !== null}
+                />
+              </div>
+              {filteredSamples.length > 0 && (
+                <div className="shrink-0 px-4 py-2 border-t border-border bg-muted/30">
+                  <RangeSlider
+                    min={0}
+                    max={filteredSamples.length - 1}
+                    value={visibleRange}
+                    onChange={handleRangeChange}
+                    minRange={Math.min(10, Math.floor(filteredSamples.length / 10))}
+                    formatLabel={(idx) => {
+                      const sample = filteredSamples[idx];
+                      if (!sample) return "";
+                      const totalMs = sample.t - filteredSamples[0].t;
+                      const secs = Math.floor(totalMs / 1000);
+                      const mins = Math.floor(secs / 60);
+                      const remSecs = secs % 60;
+                      return `${mins}:${remSecs.toString().padStart(2, "0")}`;
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           }
         />
       </main>
