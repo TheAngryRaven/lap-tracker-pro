@@ -66,7 +66,7 @@ export function FileImport({ onDataLoaded }: FileImportProps) {
         <p className="text-lg font-medium">{isLoading ? "Processing..." : "Drop datalog file here"}</p>
         <p className="text-sm">Supports .nmea, .ubx, .vbo, Alfano CSV, AiM CSV, or NMEA sentences</p>
         <p className="text-sm text-primary/80">
-          <i>VBO, AiM, RaceBox Support experimental</i>
+          <i>Alfano, AiM, RaceBox Support experimental</i>
         </p>
         <p className="text-sm">
           <i>All processing done locally</i>
