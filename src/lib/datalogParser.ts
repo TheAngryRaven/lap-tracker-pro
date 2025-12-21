@@ -3,6 +3,7 @@ import { parseDatalog } from './nmeaParser';
 import { parseUbxFile, isUbxFormat } from './ubxParser';
 import { parseVboFile, isVboFormat } from './vboParser';
 import { parseAlfanoFile, isAlfanoFormat } from './alfanoParser';
+import { parseAimFile, isAimFormat } from './aimParser';
 
 /**
  * Unified datalog parser that auto-detects format and routes to appropriate parser.
@@ -10,6 +11,7 @@ import { parseAlfanoFile, isAlfanoFormat } from './alfanoParser';
  * - UBX binary format (u-blox GPS receivers)
  * - VBO format (Racelogic VBOX, RaceBox exports)
  * - Alfano CSV format (Alfano data loggers)
+ * - AiM CSV format (MyChron 5/6, Race Studio 3 exports)
  * - NMEA text format (CSV with NMEA sentences, .nmea files)
  */
 export async function parseDatalogFile(file: File): Promise<ParsedData> {
@@ -31,6 +33,11 @@ export async function parseDatalogFile(file: File): Promise<ParsedData> {
   // Check if it's Alfano CSV format
   if (isAlfanoFormat(text)) {
     return parseAlfanoFile(text);
+  }
+  
+  // Check if it's AiM CSV format (MyChron, Race Studio 3)
+  if (isAimFormat(text)) {
+    return parseAimFile(text);
   }
   
   // Otherwise, treat as NMEA text format
@@ -57,16 +64,24 @@ export function parseDatalogContent(content: string | ArrayBuffer): ParsedData {
       return parseAlfanoFile(text);
     }
     
+    if (isAimFormat(text)) {
+      return parseAimFile(text);
+    }
+    
     return parseDatalog(text);
   }
   
-  // String content - check VBO first, then Alfano, then NMEA
+  // String content - check VBO first, then Alfano, then AiM, then NMEA
   if (isVboFormat(content)) {
     return parseVboFile(content);
   }
   
   if (isAlfanoFormat(content)) {
     return parseAlfanoFile(content);
+  }
+  
+  if (isAimFormat(content)) {
+    return parseAimFile(content);
   }
   
   return parseDatalog(content);
