@@ -430,7 +430,11 @@ export default function Index() {
                 
                 {/* Lap Summary Widget in tab bar */}
                 <div className="ml-auto mr-3 flex items-center gap-4">
-                  <LapSummaryWidget laps={laps} course={selectedCourse} />
+                  <LapSummaryWidget 
+                    laps={laps} 
+                    course={selectedCourse} 
+                    selectedLap={selectedLapNumber !== null ? laps.find(l => l.lapNumber === selectedLapNumber) ?? null : null}
+                  />
                   {referenceLapNumber !== null && (
                     <span className="px-2 py-1 text-xs font-medium bg-accent text-accent-foreground rounded">
                       Reference Lap: {referenceLapNumber}

@@ -1,13 +1,14 @@
 import { Lap, Course, courseHasSectors } from '@/types/racing';
 import { formatLapTime, formatSectorTime, calculateOptimalLap } from '@/lib/lapCalculation';
-import { Trophy, Sparkles } from 'lucide-react';
+import { Trophy, Sparkles, Timer } from 'lucide-react';
 
 interface LapSummaryWidgetProps {
   laps: Lap[];
   course: Course | null;
+  selectedLap: Lap | null;
 }
 
-export function LapSummaryWidget({ laps, course }: LapSummaryWidgetProps) {
+export function LapSummaryWidget({ laps, course, selectedLap }: LapSummaryWidgetProps) {
   if (laps.length === 0) return null;
 
   // Find fastest lap
@@ -18,8 +19,29 @@ export function LapSummaryWidget({ laps, course }: LapSummaryWidgetProps) {
   const showSectors = courseHasSectors(course);
   const optimalLap = showSectors ? calculateOptimalLap(laps) : null;
 
+  // Calculate delta for selected lap
+  const selectedDelta = selectedLap 
+    ? selectedLap.lapTimeMs - fastestLap.lapTimeMs 
+    : null;
+
   return (
     <div className="flex items-center gap-4 text-xs font-mono">
+      {/* Selected lap with delta to fastest */}
+      {selectedLap && (
+        <div className="flex items-center gap-1.5">
+          <Timer className="w-3.5 h-3.5 text-foreground" />
+          <span className="text-muted-foreground">Lap {selectedLap.lapNumber}:</span>
+          <span className="text-foreground font-semibold">
+            {formatLapTime(selectedLap.lapTimeMs)}
+          </span>
+          {selectedDelta !== null && selectedDelta > 0 && (
+            <span className="text-muted-foreground">
+              Δ: +{formatSectorTime(selectedDelta)}s
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center gap-1.5">
         <Trophy className="w-3.5 h-3.5 text-racing-lapBest" />
         <span className="text-muted-foreground">Fastest:</span>
