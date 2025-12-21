@@ -1,11 +1,13 @@
 import { ParsedData } from '@/types/racing';
 import { parseDatalog } from './nmeaParser';
 import { parseUbxFile, isUbxFormat } from './ubxParser';
+import { parseVboFile, isVboFormat } from './vboParser';
 
 /**
  * Unified datalog parser that auto-detects format and routes to appropriate parser.
  * Supports:
  * - UBX binary format (u-blox GPS receivers)
+ * - VBO format (Racelogic VBOX, RaceBox exports)
  * - NMEA text format (CSV with NMEA sentences, .nmea files)
  */
 export async function parseDatalogFile(file: File): Promise<ParsedData> {
@@ -16,8 +18,15 @@ export async function parseDatalogFile(file: File): Promise<ParsedData> {
     return parseUbxFile(buffer);
   }
   
-  // Otherwise, treat as NMEA text format
+  // For text formats, read as string
   const text = await file.text();
+  
+  // Check if it's VBO format
+  if (isVboFormat(text)) {
+    return parseVboFile(text);
+  }
+  
+  // Otherwise, treat as NMEA text format
   return parseDatalog(text);
 }
 
@@ -29,11 +38,21 @@ export function parseDatalogContent(content: string | ArrayBuffer): ParsedData {
     if (isUbxFormat(content)) {
       return parseUbxFile(content);
     }
-    // Convert to text and try NMEA
+    // Convert to text for VBO/NMEA detection
     const decoder = new TextDecoder();
-    return parseDatalog(decoder.decode(content));
+    const text = decoder.decode(content);
+    
+    if (isVboFormat(text)) {
+      return parseVboFile(text);
+    }
+    
+    return parseDatalog(text);
   }
   
-  // String content - must be NMEA
+  // String content - check VBO first, then NMEA
+  if (isVboFormat(content)) {
+    return parseVboFile(content);
+  }
+  
   return parseDatalog(content);
 }
