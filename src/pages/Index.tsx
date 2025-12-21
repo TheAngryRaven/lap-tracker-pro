@@ -132,6 +132,19 @@ export default function Index() {
     };
   }, [filteredSamples, referenceSamples, useKph]);
 
+  // Calculate lap to fastest delta (direct lap time difference)
+  const lapToFastestDelta = useMemo((): number | null => {
+    if (selectedLapNumber === null || laps.length === 0) return null;
+    
+    const selectedLap = laps.find(l => l.lapNumber === selectedLapNumber);
+    if (!selectedLap) return null;
+    
+    const fastestLap = laps.reduce((min, lap) => 
+      lap.lapTimeMs < min.lapTimeMs ? lap : min, laps[0]);
+    
+    return selectedLap.lapTimeMs - fastestLap.lapTimeMs;
+  }, [laps, selectedLapNumber]);
+
   // Calculate pace diff for display (vs reference if selected, else vs best)
   const { paceDiff, paceDiffLabel, deltaTopSpeed, deltaMinSpeed } = useMemo((): { 
     paceDiff: number | null; 
@@ -434,6 +447,7 @@ export default function Index() {
                     laps={laps} 
                     course={selectedCourse} 
                     selectedLap={selectedLapNumber !== null ? laps.find(l => l.lapNumber === selectedLapNumber) ?? null : null}
+                    paceDiff={paceDiff}
                   />
                 </div>
               </div>
@@ -453,6 +467,7 @@ export default function Index() {
                     deltaTopSpeed={deltaTopSpeed}
                     deltaMinSpeed={deltaMinSpeed}
                     referenceLapNumber={referenceLapNumber}
+                    lapToFastestDelta={lapToFastestDelta}
                   />
                 ) : (
                   <LapTable 

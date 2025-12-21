@@ -7,9 +7,10 @@ interface LapSummaryWidgetProps {
   laps: Lap[];
   course: Course | null;
   selectedLap: Lap | null;
+  paceDiff?: number | null;
 }
 
-export function LapSummaryWidget({ laps, course, selectedLap }: LapSummaryWidgetProps) {
+export function LapSummaryWidget({ laps, course, selectedLap, paceDiff }: LapSummaryWidgetProps) {
   if (laps.length === 0) return null;
 
   // Find fastest lap
@@ -20,14 +21,9 @@ export function LapSummaryWidget({ laps, course, selectedLap }: LapSummaryWidget
   const showSectors = courseHasSectors(course);
   const optimalLap = showSectors ? calculateOptimalLap(laps) : null;
 
-  // Calculate delta for selected lap
-  const selectedDelta = selectedLap 
-    ? selectedLap.lapTimeMs - fastestLap.lapTimeMs 
-    : null;
-
   return (
     <div className="flex items-center gap-4 text-xs font-mono">
-      {/* Selected lap with delta to fastest */}
+      {/* Selected lap info */}
       {selectedLap && (
         <div className="flex items-center gap-1.5">
           <Tooltip>
@@ -40,11 +36,6 @@ export function LapSummaryWidget({ laps, course, selectedLap }: LapSummaryWidget
           <span className="text-foreground font-semibold">
             {formatLapTime(selectedLap.lapTimeMs)}
           </span>
-          {selectedDelta !== null && selectedDelta > 0 && (
-            <span className="text-muted-foreground">
-              Δ: +{formatSectorTime(selectedDelta)}s
-            </span>
-          )}
         </div>
       )}
 
@@ -59,7 +50,7 @@ export function LapSummaryWidget({ laps, course, selectedLap }: LapSummaryWidget
           {formatLapTime(fastestLap.lapTimeMs)}
         </span>
       </div>
-      
+
       {optimalLap && (
         <div className="flex items-center gap-1.5">
           <Tooltip>
@@ -70,6 +61,19 @@ export function LapSummaryWidget({ laps, course, selectedLap }: LapSummaryWidget
           </Tooltip>
           <span className="text-purple-400 font-semibold">
             {formatLapTime(optimalLap.optimalTimeMs)}
+          </span>
+        </div>
+      )}
+
+      {/* Delta to reference - moved to the right */}
+      {paceDiff !== null && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground">Δ:</span>
+          <span 
+            className="font-semibold"
+            style={{ color: paceDiff < 0 ? 'hsl(142, 76%, 45%)' : paceDiff > 0 ? 'hsl(0, 84%, 55%)' : 'hsl(var(--muted-foreground))' }}
+          >
+            {paceDiff > 0 ? '+' : ''}{paceDiff.toFixed(2)}s
           </span>
         </div>
       )}
