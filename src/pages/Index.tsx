@@ -355,7 +355,7 @@ export default function Index() {
                 <span className="text-sm">View on GitHub</span>
               </a>
               <a
-                href="https://github.com/TheAngryRaven/BirdsEye"
+                href="https://github.com/TheAngryRaven/DovesDataLogger"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
