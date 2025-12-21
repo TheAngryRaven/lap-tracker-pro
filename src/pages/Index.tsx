@@ -59,7 +59,7 @@ export default function Index() {
         });
         const computedLaps = calculateLaps(parsedData.samples, okcCourse);
         setLaps(computedLaps);
-        
+
         // Auto-select lap 5 and reference lap 8 to showcase delta features
         if (computedLaps.length >= 5) {
           setSelectedLapNumber(5);
@@ -103,20 +103,19 @@ export default function Index() {
   // Get reference lap samples
   const referenceSamples = useMemo((): GpsSample[] => {
     if (!data || referenceLapNumber === null) return [];
-    
+
     const refLap = laps.find((l) => l.lapNumber === referenceLapNumber);
     if (!refLap) return [];
-    
+
     return data.samples.slice(refLap.startIndex, refLap.endIndex + 1);
   }, [data, laps, referenceLapNumber]);
 
   // Get fastest lap samples for pace comparison when no reference selected
   const fastestLapSamples = useMemo((): GpsSample[] => {
     if (!data || laps.length === 0) return [];
-    
-    const fastestLap = laps.reduce((min, lap) => 
-      lap.lapTimeMs < min.lapTimeMs ? lap : min, laps[0]);
-    
+
+    const fastestLap = laps.reduce((min, lap) => (lap.lapTimeMs < min.lapTimeMs ? lap : min), laps[0]);
+
     return data.samples.slice(fastestLap.startIndex, fastestLap.endIndex + 1);
   }, [data, laps]);
 
@@ -125,82 +124,77 @@ export default function Index() {
     if (referenceSamples.length === 0 || filteredSamples.length === 0) {
       return { paceData: [], referenceSpeedData: [] };
     }
-    
+
     return {
       paceData: calculatePace(filteredSamples, referenceSamples),
-      referenceSpeedData: calculateReferenceSpeed(filteredSamples, referenceSamples, useKph)
+      referenceSpeedData: calculateReferenceSpeed(filteredSamples, referenceSamples, useKph),
     };
   }, [filteredSamples, referenceSamples, useKph]);
 
   // Calculate lap to fastest delta (direct lap time difference)
   const lapToFastestDelta = useMemo((): number | null => {
     if (selectedLapNumber === null || laps.length === 0) return null;
-    
-    const selectedLap = laps.find(l => l.lapNumber === selectedLapNumber);
+
+    const selectedLap = laps.find((l) => l.lapNumber === selectedLapNumber);
     if (!selectedLap) return null;
-    
-    const fastestLap = laps.reduce((min, lap) => 
-      lap.lapTimeMs < min.lapTimeMs ? lap : min, laps[0]);
-    
+
+    const fastestLap = laps.reduce((min, lap) => (lap.lapTimeMs < min.lapTimeMs ? lap : min), laps[0]);
+
     return selectedLap.lapTimeMs - fastestLap.lapTimeMs;
   }, [laps, selectedLapNumber]);
 
   // Calculate pace diff for display (vs reference if selected, else vs best)
-  const { paceDiff, paceDiffLabel, deltaTopSpeed, deltaMinSpeed } = useMemo((): { 
-    paceDiff: number | null; 
-    paceDiffLabel: 'best' | 'ref';
+  const { paceDiff, paceDiffLabel, deltaTopSpeed, deltaMinSpeed } = useMemo((): {
+    paceDiff: number | null;
+    paceDiffLabel: "best" | "ref";
     deltaTopSpeed: number | null;
     deltaMinSpeed: number | null;
   } => {
     if (filteredSamples.length === 0 || selectedLapNumber === null) {
-      return { paceDiff: null, paceDiffLabel: 'best', deltaTopSpeed: null, deltaMinSpeed: null };
+      return { paceDiff: null, paceDiffLabel: "best", deltaTopSpeed: null, deltaMinSpeed: null };
     }
-    
+
     // Calculate speed events for current lap
     const currentEvents = findSpeedEvents(filteredSamples);
-    const currentPeaks = currentEvents.filter(e => e.type === 'peak');
-    const currentValleys = currentEvents.filter(e => e.type === 'valley');
-    const currentAvgTop = currentPeaks.length > 0 
-      ? currentPeaks.reduce((sum, e) => sum + e.speed, 0) / currentPeaks.length 
-      : null;
-    const currentAvgMin = currentValleys.length > 0 
-      ? currentValleys.reduce((sum, e) => sum + e.speed, 0) / currentValleys.length 
-      : null;
-    
+    const currentPeaks = currentEvents.filter((e) => e.type === "peak");
+    const currentValleys = currentEvents.filter((e) => e.type === "valley");
+    const currentAvgTop =
+      currentPeaks.length > 0 ? currentPeaks.reduce((sum, e) => sum + e.speed, 0) / currentPeaks.length : null;
+    const currentAvgMin =
+      currentValleys.length > 0 ? currentValleys.reduce((sum, e) => sum + e.speed, 0) / currentValleys.length : null;
+
     // Helper to calculate deltas against comparison samples
     const calculateDeltas = (comparisonSamples: GpsSample[]) => {
       const compEvents = findSpeedEvents(comparisonSamples);
-      const compPeaks = compEvents.filter(e => e.type === 'peak');
-      const compValleys = compEvents.filter(e => e.type === 'valley');
-      const compAvgTop = compPeaks.length > 0 
-        ? compPeaks.reduce((sum, e) => sum + e.speed, 0) / compPeaks.length 
-        : null;
-      const compAvgMin = compValleys.length > 0 
-        ? compValleys.reduce((sum, e) => sum + e.speed, 0) / compValleys.length 
-        : null;
-      
+      const compPeaks = compEvents.filter((e) => e.type === "peak");
+      const compValleys = compEvents.filter((e) => e.type === "valley");
+      const compAvgTop =
+        compPeaks.length > 0 ? compPeaks.reduce((sum, e) => sum + e.speed, 0) / compPeaks.length : null;
+      const compAvgMin =
+        compValleys.length > 0 ? compValleys.reduce((sum, e) => sum + e.speed, 0) / compValleys.length : null;
+
       return {
-        deltaTop: (currentAvgTop !== null && compAvgTop !== null) ? currentAvgTop - compAvgTop : null,
-        deltaMin: (currentAvgMin !== null && compAvgMin !== null) ? currentAvgMin - compAvgMin : null
+        deltaTop: currentAvgTop !== null && compAvgTop !== null ? currentAvgTop - compAvgTop : null,
+        deltaMin: currentAvgMin !== null && compAvgMin !== null ? currentAvgMin - compAvgMin : null,
       };
     };
-    
+
     // If reference is selected, use reference pace
     if (referenceSamples.length > 0 && paceData.length > 0) {
-      const lastPace = paceData.filter(p => p !== null).pop() ?? null;
+      const lastPace = paceData.filter((p) => p !== null).pop() ?? null;
       const { deltaTop, deltaMin } = calculateDeltas(referenceSamples);
-      return { paceDiff: lastPace, paceDiffLabel: 'ref', deltaTopSpeed: deltaTop, deltaMinSpeed: deltaMin };
+      return { paceDiff: lastPace, paceDiffLabel: "ref", deltaTopSpeed: deltaTop, deltaMinSpeed: deltaMin };
     }
-    
+
     // Otherwise, compare to fastest lap
     if (fastestLapSamples.length > 0) {
       const bestPaceData = calculatePace(filteredSamples, fastestLapSamples);
-      const lastPace = bestPaceData.filter(p => p !== null).pop() ?? null;
+      const lastPace = bestPaceData.filter((p) => p !== null).pop() ?? null;
       const { deltaTop, deltaMin } = calculateDeltas(fastestLapSamples);
-      return { paceDiff: lastPace, paceDiffLabel: 'best', deltaTopSpeed: deltaTop, deltaMinSpeed: deltaMin };
+      return { paceDiff: lastPace, paceDiffLabel: "best", deltaTopSpeed: deltaTop, deltaMinSpeed: deltaMin };
     }
-    
-    return { paceDiff: null, paceDiffLabel: 'best', deltaTopSpeed: null, deltaMinSpeed: null };
+
+    return { paceDiff: null, paceDiffLabel: "best", deltaTopSpeed: null, deltaMinSpeed: null };
   }, [filteredSamples, referenceSamples, fastestLapSamples, paceData, selectedLapNumber]);
 
   // Compute bounds for filtered samples
@@ -252,20 +246,26 @@ export default function Index() {
     [data],
   );
 
-  const handleScrub = useCallback((index: number) => {
-    // Clamp to visible range
-    const clampedIndex = Math.max(0, Math.min(index, visibleRange[1] - visibleRange[0]));
-    setCurrentIndex(clampedIndex);
-  }, [visibleRange]);
+  const handleScrub = useCallback(
+    (index: number) => {
+      // Clamp to visible range
+      const clampedIndex = Math.max(0, Math.min(index, visibleRange[1] - visibleRange[0]));
+      setCurrentIndex(clampedIndex);
+    },
+    [visibleRange],
+  );
 
-  const handleRangeChange = useCallback((newRange: [number, number]) => {
-    setVisibleRange(newRange);
-    // Clamp current index to new visible range
-    const visibleLength = newRange[1] - newRange[0];
-    if (currentIndex > visibleLength) {
-      setCurrentIndex(visibleLength);
-    }
-  }, [currentIndex]);
+  const handleRangeChange = useCallback(
+    (newRange: [number, number]) => {
+      setVisibleRange(newRange);
+      // Clamp current index to new visible range
+      const visibleLength = newRange[1] - newRange[0];
+      if (currentIndex > visibleLength) {
+        setCurrentIndex(visibleLength);
+      }
+    },
+    [currentIndex],
+  );
 
   const handleFieldToggle = useCallback((fieldName: string) => {
     setFieldMappings((prev) => prev.map((f) => (f.name === fieldName ? { ...f, enabled: !f.enabled } : f)));
@@ -293,7 +293,7 @@ export default function Index() {
   }, []);
 
   const speedUnit = useKph ? "kph" : "mph";
-  const getCurrentSpeed = (sample: GpsSample) => useKph ? sample.speedKph : sample.speedMph;
+  const getCurrentSpeed = (sample: GpsSample) => (useKph ? sample.speedKph : sample.speedMph);
 
   // No data loaded - show import UI
   if (!data) {
@@ -319,6 +319,7 @@ export default function Index() {
 
             <div className="text-center text-sm text-muted-foreground space-y-3">
               <p>Track definitions are saved in your browser.</p>
+              <p> </p>
 
               <div className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20">
                 <h3 className="font-medium text-foreground mb-2">Try it out!</h3>
@@ -344,15 +345,30 @@ export default function Index() {
             </div>
 
             <div className="flex items-center justify-center gap-8 mt-4">
-              <a href="https://github.com/TheAngryRaven/lap-tracker-pro" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="https://github.com/TheAngryRaven/lap-tracker-pro"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
                 <Github className="w-5 h-5" />
                 <span className="text-sm">View on GitHub</span>
               </a>
-              <a href="https://github.com/TheAngryRaven/BirdsEye" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="https://github.com/TheAngryRaven/BirdsEye"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
                 <Github className="w-5 h-5" />
                 <span className="text-sm">View Datalogger</span>
               </a>
-              <a href="https://github.com/TheAngryRaven/DovesLapTimer" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                href="https://github.com/TheAngryRaven/DovesLapTimer"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
                 <Github className="w-5 h-5" />
                 <span className="text-sm">View Timer Library</span>
               </a>
@@ -374,9 +390,13 @@ export default function Index() {
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <Label htmlFor="speed-unit" className="text-xs text-muted-foreground">MPH</Label>
+            <Label htmlFor="speed-unit" className="text-xs text-muted-foreground">
+              MPH
+            </Label>
             <Switch id="speed-unit" checked={useKph} onCheckedChange={setUseKph} />
-            <Label htmlFor="speed-unit" className="text-xs text-muted-foreground">KPH</Label>
+            <Label htmlFor="speed-unit" className="text-xs text-muted-foreground">
+              KPH
+            </Label>
           </div>
 
           <TrackEditor selection={selection} onSelectionChange={handleSelectionChange} compact />
@@ -402,11 +422,14 @@ export default function Index() {
               <span className="text-racing-telemetrySpeed">
                 {getCurrentSpeed(visibleSamples[currentIndex]).toFixed(1)} {speedUnit}
               </span>
-              {fieldMappings.filter((f) => f.enabled).slice(0, 2).map((field) => (
-                <span key={field.name} className="text-muted-foreground">
-                  {field.name}: {(visibleSamples[currentIndex].extraFields[field.name] ?? 0).toFixed(1)}
-                </span>
-              ))}
+              {fieldMappings
+                .filter((f) => f.enabled)
+                .slice(0, 2)
+                .map((field) => (
+                  <span key={field.name} className="text-muted-foreground">
+                    {field.name}: {(visibleSamples[currentIndex].extraFields[field.name] ?? 0).toFixed(1)}
+                  </span>
+                ))}
             </div>
           )}
 
@@ -440,13 +463,15 @@ export default function Index() {
                     <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded">{laps.length}</span>
                   )}
                 </button>
-                
+
                 {/* Lap Summary Widget in tab bar */}
                 <div className="ml-auto mr-3 flex items-center gap-4">
-                  <LapSummaryWidget 
-                    laps={laps} 
-                    course={selectedCourse} 
-                    selectedLap={selectedLapNumber !== null ? laps.find(l => l.lapNumber === selectedLapNumber) ?? null : null}
+                  <LapSummaryWidget
+                    laps={laps}
+                    course={selectedCourse}
+                    selectedLap={
+                      selectedLapNumber !== null ? (laps.find((l) => l.lapNumber === selectedLapNumber) ?? null) : null
+                    }
                     paceDiff={paceDiff}
                   />
                 </div>
@@ -470,14 +495,14 @@ export default function Index() {
                     lapToFastestDelta={lapToFastestDelta}
                   />
                 ) : (
-                  <LapTable 
+                  <LapTable
                     laps={laps}
                     course={selectedCourse}
-                    onLapSelect={handleLapSelect} 
-                    selectedLapNumber={selectedLapNumber} 
+                    onLapSelect={handleLapSelect}
+                    selectedLapNumber={selectedLapNumber}
                     referenceLapNumber={referenceLapNumber}
                     onSetReference={handleSetReference}
-                    useKph={useKph} 
+                    useKph={useKph}
                   />
                 )}
               </div>
