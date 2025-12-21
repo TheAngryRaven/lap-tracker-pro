@@ -25,6 +25,7 @@ interface RaceLineViewProps {
   deltaTopSpeed?: number | null;
   deltaMinSpeed?: number | null;
   referenceLapNumber?: number | null;
+  lapToFastestDelta?: number | null; // Direct lap time difference to fastest
 }
 
 // Get speed color (green -> yellow -> orange -> red)
@@ -106,7 +107,7 @@ function createSpeedEventIcon(event: SpeedEvent, useKph: boolean): L.DivIcon {
   });
 }
 
-export function RaceLineView({ samples, allSamples, referenceSamples = [], currentIndex, course, bounds, useKph = false, paceDiff = null, paceDiffLabel = 'best', deltaTopSpeed = null, deltaMinSpeed = null, referenceLapNumber = null }: RaceLineViewProps) {
+export function RaceLineView({ samples, allSamples, referenceSamples = [], currentIndex, course, bounds, useKph = false, paceDiff = null, paceDiffLabel = 'best', deltaTopSpeed = null, deltaMinSpeed = null, referenceLapNumber = null, lapToFastestDelta = null }: RaceLineViewProps) {
   // Use allSamples for statistics if provided, otherwise fall back to samples
   const samplesForStats = allSamples ?? samples;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -415,7 +416,7 @@ export function RaceLineView({ samples, allSamples, referenceSamples = [], curre
               </div>
               
               {/* Delta section */}
-              {(referenceLapNumber !== null || paceDiff !== null || deltaTopSpeed !== null || deltaMinSpeed !== null) && (
+              {(referenceLapNumber !== null || lapToFastestDelta !== null || deltaTopSpeed !== null || deltaMinSpeed !== null) && (
                 <div className="mt-2 pt-2 border-t border-border space-y-1">
                   <div className="text-xs text-muted-foreground mb-1 text-center">
                     Δ {paceDiffLabel}
@@ -426,14 +427,14 @@ export function RaceLineView({ samples, allSamples, referenceSamples = [], curre
                       <span className="font-mono text-foreground">{referenceLapNumber}</span>
                     </div>
                   )}
-                  {paceDiff !== null && (
+                  {lapToFastestDelta !== null && (
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Δ Time:</span>
                       <span 
                         className="font-mono"
-                        style={{ color: paceDiff < 0 ? 'hsl(142, 76%, 45%)' : paceDiff > 0 ? 'hsl(0, 84%, 55%)' : 'hsl(var(--muted-foreground))' }}
+                        style={{ color: lapToFastestDelta < 0 ? 'hsl(142, 76%, 45%)' : lapToFastestDelta > 0 ? 'hsl(0, 84%, 55%)' : 'hsl(var(--muted-foreground))' }}
                       >
-                        {paceDiff > 0 ? '+' : ''}{paceDiff.toFixed(2)}s
+                        {lapToFastestDelta > 0 ? '+' : ''}{(lapToFastestDelta / 1000).toFixed(3)}s
                       </span>
                     </div>
                   )}
