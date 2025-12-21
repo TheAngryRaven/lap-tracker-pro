@@ -64,7 +64,10 @@ export function FileImport({ onDataLoaded }: FileImportProps) {
       <div className="flex flex-col items-center gap-2 text-muted-foreground">
         {isLoading ? <Loader2 className="w-12 h-12 animate-spin text-primary" /> : <Upload className="w-12 h-12" />}
         <p className="text-lg font-medium">{isLoading ? "Processing..." : "Drop datalog file here"}</p>
-        <p className="text-sm">Supports .nmea, .ubx, or CSV with NMEA sentences</p>
+        <p className="text-sm">Supports .nmea, .ubx, .vbo, or CSV with NMEA sentences</p>
+        <p className="text-sm text-primary/80">
+          <i>Now with RaceBox VBO format support!</i>
+        </p>
         <p className="text-sm">
           <i>All processing done locally</i>
         </p>
@@ -73,7 +76,7 @@ export function FileImport({ onDataLoaded }: FileImportProps) {
       <label>
         <input
           type="file"
-          accept=".csv,.nmea,.txt,.ubx"
+          accept=".csv,.nmea,.txt,.ubx,.vbo"
           onChange={handleFileChange}
           className="hidden"
           disabled={isLoading}
